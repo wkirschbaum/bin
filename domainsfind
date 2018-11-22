@@ -61,7 +61,7 @@ def expand(name)
     ".net",
   ].map { |ext| "#{name}#{ext}" }
 end
-  
+
 def find_domains(domain)
   store = Store.new
   domains = []
@@ -70,13 +70,13 @@ def find_domains(domain)
   else
     domains += expand(domain)
   end
-  
+
   domains
     .map { |name| FindDomain.new(name, store) }
     .each(&:find)
     .each(&:print_message)
 end
-  
+
 trap("SIGINT") do
   exit!
 end
