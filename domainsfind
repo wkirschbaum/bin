@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+
+require 'whois'
+require 'whois-parser'
+require 'colorize'
+require 'readline'
+
+class ConsoleOut
+  def initialize
+    @success_entries = []
+  end
+  
+  def message text
+    puts text
+  end
+
+  def success text
+    @success_entries << text
+    puts text.colorize(:green)
+  end
+
+  def warning text
+    puts text.colorize(:yellow)
+  end
+
+  def error text
+    puts "Error: #{text}".colorize(:red)
+  end
+
+  def print_success
+    @success_entries.each do |entry|
+      puts entry.colorize(:green)
+    end
+  end
+end
+
+def find_domain(domain, output)
+  r = Whois.whois(domain).parser
+  if r.available?
+    output.success "#{domain} is available."
+  else
+    output.warning "#{domain} nope! already used."
+  end
+rescue => e
+  output.error "#{e.message}"
+end
+
+output = ConsoleOut.new
+
+trap("SIGINT") do
+  output.print_success
+  exit!
+end
+
+puts "ctr-c to exit"
+while buf = Readline.readline("> ").strip
+  find_domain(buf, output)
+end
