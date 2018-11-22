@@ -45,7 +45,7 @@ class FindDomain
     when :error
       puts "#{@domain} returned an error.".colorize(:red)
     when :starting
-      puts "#{@domain} timed out."
+      puts "#{@domain} timed out." # assume it timed out, because we are calling it above
     end
   end
 end
