@@ -5,54 +5,70 @@ require 'whois-parser'
 require 'colorize'
 require 'readline'
 
-class ConsoleOut
-  def initialize
-    @success_entries = []
-  end
-  
-  def message text
-    puts text
+def expand(name)
+  [
+    ".co.za",
+    ".com",
+    ".net"
+  ].map { |ext| "#{name}#{ext}" }
+end
+
+class FindDomain
+  def initialize(domain)
+    @status = :starting
+    @domain = domain
+    @thread = nil
   end
 
-  def success text
-    @success_entries << text
-    puts text.colorize(:green)
+  def find
+    @thread = Thread.new do
+      r = Whois.whois(@domain).parser
+      if r.available?
+        @status = :available
+      else
+        @status = :unavailable
+      end
+    rescue
+      @status = :error
+    end
   end
 
-  def warning text
-    puts text.colorize(:yellow)
-  end
+  def print_message
+    # Join thread or timeout before displaying
+    @thread&.join(10)
 
-  def error text
-    puts "Error: #{text}".colorize(:red)
-  end
-
-  def print_success
-    @success_entries.each do |entry|
-      puts entry.colorize(:green)
+    case @status
+    when :available
+      puts "#{@domain} is available.".colorize(:green)
+    when :unavailable
+      puts "#{@domain} is being used.".colorize(:yellow)
+    when :error
+      puts "#{@domain} returned an error.".colorize(:red)
+    when :starting
+      puts "#{@domain} timed out."
     end
   end
 end
-
-def find_domain(domain, output)
-  r = Whois.whois(domain).parser
-  if r.available?
-    output.success "#{domain} is available."
+  
+def find_domains(domain)
+  domains = []
+  if domain.include?('.')
+    domains << domain
   else
-    output.warning "#{domain} nope! already used."
+    domains += expand(domain)
   end
-rescue => e
-  output.error "#{e.message}"
+  
+  domains
+    .map { |name| FindDomain.new(name) }
+    .each(&:find)
+    .each(&:print_message)
 end
-
-output = ConsoleOut.new
-
+  
 trap("SIGINT") do
-  output.print_success
   exit!
 end
 
 puts "ctr-c to exit"
 while buf = Readline.readline("> ").strip
-  find_domain(buf, output)
+  find_domains(buf)
 end
