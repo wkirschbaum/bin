@@ -5,16 +5,9 @@ require 'whois-parser'
 require 'colorize'
 require 'readline'
 
-def expand(name)
-  [
-    ".co.za",
-    ".com",
-    ".net"
-  ].map { |ext| "#{name}#{ext}" }
-end
-
 class FindDomain
-  def initialize(domain)
+  def initialize(domain, store)
+    @store = store
     @status = :starting
     @domain = domain
     @thread = nil
@@ -39,6 +32,7 @@ class FindDomain
 
     case @status
     when :available
+      @store.write(@domain)
       puts "#{@domain} is available.".colorize(:green)
     when :unavailable
       puts "#{@domain} is being used.".colorize(:yellow)
@@ -49,8 +43,27 @@ class FindDomain
     end
   end
 end
+
+class Store
+  def initialize
+    @file = File.expand_path('~/.domainsfind_available')
+  end
+
+  def write(domain)
+    File.open(@file, 'a') { |file| file.puts domain }
+  end
+end
+
+def expand(name)
+  [
+    ".co.za",
+    ".com",
+    ".net",
+  ].map { |ext| "#{name}#{ext}" }
+end
   
 def find_domains(domain)
+  store = Store.new
   domains = []
   if domain.include?('.')
     domains << domain
@@ -59,7 +72,7 @@ def find_domains(domain)
   end
   
   domains
-    .map { |name| FindDomain.new(name) }
+    .map { |name| FindDomain.new(name, store) }
     .each(&:find)
     .each(&:print_message)
 end
