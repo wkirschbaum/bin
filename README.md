@@ -1,5 +1,5 @@
 # bin
-Personal bin scripts
+Personal bin scripts. Add this directory to your path and ensure the files have execute rights.
 
 ## domainsfind
-Find domains containing the name, to see if they are available.
+A repl to find and record available domain names.
